@@ -1,0 +1,57 @@
+app:
+  android:
+    flavorDimensions: "flavor-type"
+
+flavors:
+  dev:
+    app:
+      name: "lara_g_admin Dev"
+    #      icon: "assets/app_icon.png"
+    android:
+      applicationId: "com.tabsquare.lara_g_admin.dev"
+      #icon: "assets/app_icon.png"
+    ios:
+      bundleId: com.tabsquare.lara_g_admin.dev"
+      #icon: "assets/app_icon_white_bg.png"
+      #firebase:
+        #config: "firebase/GoogleService-Info-dev.plist"
+  #      plist:
+  #        NSPhotoLibraryUsageDescription: "We need access to your photo library to save files."
+  #        NSDocumentsFolderUsageDescription: "We need access to your documents folder to save files."
+  #        UISupportsDocumentBrowser: true
+  prod:
+    app:
+      name: "lara_g_admin"
+    #      icon: "assets/app_icon.png"
+
+    android:
+      applicationId: "com.tabsquare.lara_g_admin"
+      #icon: "assets/app_icon.png"
+    ios:
+      bundleId: "com.tabsquare.lara_g_admin"
+      #icon: "assets/app_icon_white_bg.png"
+      #firebase:
+        #config: "firebase/GoogleService-Info-prod.plist"
+  #      plist:
+  #        NSPhotoLibraryUsageDescription: "We need access to your photo library to save files."
+  #        NSDocumentsFolderUsageDescription: "We need access to your documents folder to save files."
+  #        UISupportsDocumentBrowser: true
+  demo:
+    app:
+      name: "lara_g_admin Demo"
+    #      icon: "assets/app_icon.png"
+
+    android:
+      applicationId: "com.tabsquare.lara_g_admin.demo"
+      #icon: "assets/app_icon.png"
+    ios:
+      bundleId: "com.tabsquare.lara_g_admin.demo"
+      #icon: "assets/app_icon_white_bg.png"
+      #firebase:
+        #config: "firebase/GoogleService-Info-demo.plist"
+#      plist:
+#        NSPhotoLibraryUsageDescription: "We need access to your photo library to save files."
+#        NSDocumentsFolderUsageDescription: "We need access to your documents folder to save files."
+#        UISupportsDocumentBrowser: true
+ide: idea
+lib/main_demo.dart
