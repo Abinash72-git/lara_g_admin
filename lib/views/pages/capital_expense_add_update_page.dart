@@ -77,7 +77,7 @@ class _CaptalExpenseAddUpdatepageState
 
       expenseName.text = capitalExpense.expenseName;
       expenseDescription.text = capitalExpense.expenseDescription;
-      expenseAmount.text = capitalExpense.expenseAmount;
+      expenseAmount.text = capitalExpense.expenseAmount.toString();
       expenseDate.text = capitalExpense.expenseDate;
       employeeName.text = capitalExpense.employeeName;
       employeeID = capitalExpense.employeeId;
@@ -181,8 +181,10 @@ class _CaptalExpenseAddUpdatepageState
                               ),
                               GestureDetector(
                                 onTap: () async {
-                                  await Navigator.pushNamed(context,
-                                          AppConstants.EMPLOYEESELECTPAGE)
+                                  // await Navigator.pushNamed(context,
+                                  //         AppConstants.EMPLOYEESELECTPAGE)
+                                  await AppRouteName.employeeselectedpage
+                                      .push(context)
                                       .then((value) => {
                                             employee = value as EmployeeModel,
                                           });
@@ -224,7 +226,8 @@ class _CaptalExpenseAddUpdatepageState
                             textsize: 16,
                             fontWeight: FontWeight.w700,
                             letterspacing: 0.7,
-                            buttoncolor: AppColor.mainColor, borderColor: AppColor.mainColor,
+                            buttoncolor: AppColor.mainColor,
+                            borderColor: AppColor.mainColor,
                             buttonheight: 50,
                             buttonwidth: width / 2.5,
                             radius: 5,
@@ -283,64 +286,104 @@ class _CaptalExpenseAddUpdatepageState
       });
     }
   }
-addExpense() async {
-  setState(() {
-    isloading = true;
-  });
 
-  // Fetch shared preferences for token and shopId
-  final sharedPrefs = await SharedPreferences.getInstance();
-  String? token = sharedPrefs.getString(AppConstants.TOKEN);
-  String? shopId = sharedPrefs.getString(AppConstants.SHOPID);
+  addExpense() async {
+    setState(() {
+      isloading = true;
+    });
 
-  // Ensure token and shopId are available before calling createExpense or updateCapitalExpense
-  if (token != null && shopId != null) {
-    // Extract text field values
-    var expenseNameText = expenseName.text;
-    var expenseDescriptionText = expenseDescription.text;
-    var expenseAmountValue = double.tryParse(expenseAmount.text) ?? 0.0;  // Ensure expenseAmount is a valid number
-    var expenseDateText = expenseDate.text;
-    var employeeIdValue = employeeID;
-    var employeeNameText = employeeName.text;
+    // Fetch shared preferences for token and shopId
+    final sharedPrefs = await SharedPreferences.getInstance();
+    String? token = sharedPrefs.getString(AppConstants.TOKEN);
+    String? shopId = sharedPrefs.getString(AppConstants.SHOPID);
 
-    // Prepare data to send
-    var data = {
-      "expense_id": widget.data.data['route'] == 'Add' ? "" : capitalExpense.expenseId,
-      "shop_id": shopId,  // Passing shopId
-      "expense_name": expenseNameText,  // Passing expenseName
-      "expense_description": expenseDescriptionText,  // Passing expenseDescription
-      "expense_amount": expenseAmountValue,  // Passing expenseAmount
-      "expense_date": expenseDateText,  // Passing expenseDate
-      "employee_id": employeeIdValue,  // Passing employeeId
-      "employee_name": employeeNameText,  // Passing employeeName
-    };
+    // Ensure token and shopId are available before calling createExpense or updateCapitalExpense
+    if (token != null && shopId != null) {
+      // Extract text field values
+      var expenseNameText = expenseName.text;
+      var expenseDescriptionText = expenseDescription.text;
+      var expenseAmountValue = double.tryParse(expenseAmount.text) ??
+          0.0; // Ensure expenseAmount is a valid number
+      var expenseDateText = expenseDate.text;
+      var employeeIdValue = employeeID;
+      var employeeNameText = employeeName.text;
 
-    // Check if route is 'Add' (Create) or something else (Update)
-    if (widget.data.data['route'] == 'Add') {
-      // Call createExpense to create a new expense
-      await provider.createExpense(
-        token: token,
-        shopId: shopId,
-        expenseName: expenseNameText,
-        expenseDescription: expenseDescriptionText,
-        expenseAmount: expenseAmountValue,
-        expenseDate: expenseDateText,
-        employeeId: employeeIdValue,
-        employeeName: employeeNameText,
-      );
+      // Prepare data to send
+      var data = {
+        "expense_id":
+            widget.data.data['route'] == 'Add' ? "" : capitalExpense.expenseId,
+        "shop_id": shopId, // Passing shopId
+        "expense_name": expenseNameText, // Passing expenseName
+        "expense_description":
+            expenseDescriptionText, // Passing expenseDescription
+        "expense_amount": expenseAmountValue, // Passing expenseAmount
+        "expense_date": expenseDateText, // Passing expenseDate
+        "employee_id": employeeIdValue, // Passing employeeId
+        "employee_name": employeeNameText, // Passing employeeName
+      };
+
+      // Check if route is 'Add' (Create) or something else (Update)
+      if (widget.data.data['route'] == 'Add') {
+        // Call createExpense to create a new expense
+        await provider.createExpense(
+          token: token,
+          shopId: shopId,
+          expenseName: expenseNameText,
+          expenseDescription: expenseDescriptionText,
+          expenseAmount: expenseAmountValue,
+          expenseDate: expenseDateText,
+          employeeId: employeeIdValue,
+          employeeName: employeeNameText,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Expense added successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        getdata();
+      } else {
+        // Call updateExpense to update an existing expense
+        var response = await provider.updateExpense(
+          token: token,
+          shopId: shopId,
+          expenseId: capitalExpense
+              .expenseId, // Ensure the expenseId is passed for update
+          expenseName: expenseNameText,
+          expenseDescription: expenseDescriptionText,
+          expenseAmount: expenseAmountValue,
+          expenseDate: expenseDateText,
+          employeeId: employeeIdValue,
+          employeeName: employeeNameText,
+        );
+
+        // Check if update was successful and show appropriate snackbar
+        if (response.status) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Expense updated successfully!'),
+              backgroundColor: AppColor.mainColor,
+            ),
+          );
+          Navigator.pop(context);
+          getdata();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update expense!'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     } else {
-      // Call updateCapitalExpense to update an existing expense
-    //  await provider.updateCapitalExpense(data);
+      // Handle case where token or shopId is missing
+      print('Missing token or shopId');
     }
-  } else {
-    // Handle case where token or shopId is missing
-    print('Missing token or shopId');
+
+    setState(() {
+      isloading = false;
+    });
   }
-
-  setState(() {
-    isloading = false;
-  });
-}
-
-
 }

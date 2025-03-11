@@ -23,6 +23,11 @@ class LoginUrl {
 
   final String add_purchase = 'add_purchase';
   final String get_purchaseList = 'get_purchase_details';
+  final String updatePurchase = 'purchase_update';
+
+  final String createExpense = 'create_expense';
+  final String updateExpense = 'update_expense';
+  final String deleteExpense = 'delete_expense';
 
   final String get_productCategory = 'get_product_category';
   final String get_productList = 'get_product_details';
@@ -30,8 +35,9 @@ class LoginUrl {
   final String updateProduct = 'product_update';
   final String deleteProduct = 'delete_product';
 
-  final String createExpense = 'create_expense';
   final String getExpense = 'get_expense';
 
   final String salemenuDetails = 'get_sales_details';
+
+  final String getInventory = 'get_inventory_menu_details';
 }

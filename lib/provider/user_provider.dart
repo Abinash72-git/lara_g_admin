@@ -956,8 +956,6 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  
-
   Future<APIResp> createExpense({
     required String token,
     required String shopId,
@@ -970,7 +968,7 @@ class UserProvider extends ChangeNotifier {
   }) async {
     try {
       final resp = await APIService.post(
-        UrlPath.loginUrl.createExpense, // Update with the correct URL path
+        '${UrlPath.loginUrl.createExpense}/$token', // Update with the correct URL path
         data: {
           "shop_id": shopId,
           "expense_name": expenseName,
@@ -1008,7 +1006,60 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  
+ Future<APIResp> updateExpense({
+    required String token,
+    required String shopId,
+    required String expenseId,
+    required String expenseName,
+    required String expenseDescription,
+    required double expenseAmount,
+    required String expenseDate,
+    required String employeeId,
+    required String employeeName,
+  }) async {
+    try {
+      // Construct the API URL for updating the expense
+      final resp = await APIService.post(
+        '${UrlPath.loginUrl.updateExpense}/$token', // Ensure the correct endpoint
+        data: {
+          "shop_id": shopId,
+          "expense_id": expenseId, // The unique expense ID for updating the record
+          "expense_name": expenseName,
+          "expense_description": expenseDescription,
+          "expense_amount": expenseAmount,
+          "expense_date": expenseDate,
+          "employee_id": employeeId,
+          "employee_name": employeeName,
+        },
+        showNoInternet: false,
+        auth: true, // Assuming authentication is required
+        forceLogout: false,
+        console: true,
+        timeout: const Duration(seconds: 30),
+      );
+
+      print("Response Status Code: ${resp.statusCode}");
+      print("Raw Response Data: ${resp.data}");
+      print(
+          "Full Body: ${resp.fullBody}"); // Debugging the full body of the response
+
+      if (resp.status) {
+        // Assuming the response contains a success message on successful update
+        return APIResp(
+          statusCode: resp.statusCode,
+          data: resp.fullBody, // Using fullBody for the response data
+          status: true,
+        );
+      }
+
+      return resp;
+    } catch (e) {
+      print("Error in updateExpense: $e");
+      rethrow;
+    }
+  }
+
+
   Future<APIResp> addPurchase({
     required String shopId,
     required String productName,
@@ -1097,5 +1148,4 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
 }

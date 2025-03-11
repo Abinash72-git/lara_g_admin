@@ -47,7 +47,7 @@ class _CapitalExpenseListPageState extends State<CapitalExpenseListPage> {
     });
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString(AppConstants.SHOPID);
+    String? token = prefs.getString(AppConstants.TOKEN);
     String? shopId = prefs.getString(AppConstants.SHOPID);
 
     //await _con.getCapitalExpenseList();
@@ -136,12 +136,15 @@ class _CapitalExpenseListPageState extends State<CapitalExpenseListPage> {
                                         padding:
                                             const EdgeInsets.only(bottom: 10),
                                         child: Dismissible(
-                                          key: Key(index.toString()),
+                                          key: Key(gprovider
+                                              .capitalExpense[index].expenseId),
                                           direction:
                                               DismissDirection.endToStart,
                                           background: Container(),
                                           confirmDismiss: (DismissDirection
                                               direction) async {
+                                            print(
+                                                "Swipe direction: $direction");
                                             return showDialog(
                                               context: context,
                                               builder: (context) => AlertDialog(
@@ -206,7 +209,8 @@ class _CapitalExpenseListPageState extends State<CapitalExpenseListPage> {
                                                 .expenseName,
                                             expenseAmount: gprovider
                                                 .capitalExpense[index]
-                                                .expenseAmount,
+                                                .expenseAmount
+                                                .toString(),
                                             expenseDate: gprovider
                                                 .capitalExpense[index]
                                                 .expenseDate,
@@ -246,14 +250,35 @@ class _CapitalExpenseListPageState extends State<CapitalExpenseListPage> {
   }
 
   deleteCapitalExpense(String expenseID) async {
+    print("-------------------- delete expense---------------");
     final sharedPrefs = await SharedPreferences.getInstance();
     String? shopId = sharedPrefs.getString(AppConstants.SHOPID);
-    var data = {
-      "shop_id": shopId,
-      "expense_id": expenseID,
-    };
 
-    //await _con.deleteCapitalExpense(data);
-    // await _con.getEmployeeList();
+    if (shopId != null) {
+      // Call the deleteExpense API to delete the expense
+      var response = await gprovider.deleteExpense(
+        token: sharedPrefs.getString(AppConstants.TOKEN) ?? "",
+        shopId: shopId,
+        expenseId: expenseID,
+      );
+
+      // Handle the response after attempting to delete the expense
+      if (response.status) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Expense deleted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        getdata(); // Refresh the list after deletion
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete expense!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

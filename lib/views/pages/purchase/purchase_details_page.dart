@@ -2,18 +2,17 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lara_g/models/purchase_model.dart';
-import 'package:mvc_pattern/mvc_pattern.dart';
-
-import '../../controllers/user_controller.dart';
-import '../../helpers/helper.dart';
-import '../../models/employee_model.dart';
-import '../../models/route_argument.dart';
-import '../../util/app_constants.dart';
-import '../../util/colors_const.dart';
-import '../../util/styles.dart';
-import '../components/menu_widget.dart';
-import '../components/my_button.dart';
+import 'package:lara_g_admin/helpers/helper.dart';
+import 'package:lara_g_admin/models/purchaselist_model.dart';
+import 'package:lara_g_admin/provider/get_provider.dart';
+import 'package:lara_g_admin/route_generator.dart';
+import 'package:lara_g_admin/util/app_constants.dart';
+import 'package:lara_g_admin/util/colors_const.dart';
+import 'package:lara_g_admin/util/styles.dart';
+import 'package:lara_g_admin/views/components/menu_widget.dart';
+import 'package:lara_g_admin/views/components/my_button.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PurchaseDetailsPage extends StatefulWidget {
   final PurchaseModel purchase;
@@ -24,8 +23,7 @@ class PurchaseDetailsPage extends StatefulWidget {
   _PurchaseDetailsPageState createState() => _PurchaseDetailsPageState();
 }
 
-class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
-  late UserController _con;
+class _PurchaseDetailsPageState extends State<PurchaseDetailsPage> {
   MediaQueryData get dimensions => MediaQuery.of(context);
   Size get size => dimensions.size;
   double get height => size.height;
@@ -33,9 +31,9 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
   double get radius => sqrt(pow(width, 2) + pow(height, 2));
   late Helper hp;
   late PurchaseModel purchase;
-  _PurchaseDetailsPageState() : super(UserController()) {
-    _con = controller as UserController;
-  }
+  bool isloading = false;
+  GetProvider get gprovider => context.read<GetProvider>();
+
   @override
   void initState() {
     super.initState();
@@ -47,13 +45,20 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
 
   getdata() async {
     setState(() {
-      _con.isloading = true;
+      isloading = true;
     });
-    var data = {"product_id": purchase.productId};
-    await _con.getInventoryMenuList(data);
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString(AppConstants.TOKEN);
+
+    // Get the productId from the purchase object
+    var productId = purchase.productId;
+
+    // Pass token and productId to the provider method
+    await gprovider.getInventoryMenuDetails(token!, productId);
 
     setState(() {
-      _con.isloading = false;
+      isloading = false;
     });
   }
 
@@ -63,17 +68,17 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
     // TODO: implement build
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: MyColors.mainColor,
-       // brightness: Brightness.dark,
+        backgroundColor: AppColor.mainColor,
+        // brightness: Brightness.dark,
         title: Text(
           "Purchase Details",
-          style: Styles.textStyleLarge(color: MyColors.whiteColor),
+          style: Styles.textStyleLarge(color: AppColor.whiteColor),
         ),
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios,
             size: 20,
-            color: MyColors.whiteColor,
+            color: AppColor.whiteColor,
           ),
           onPressed: () {
             Navigator.of(context).pop();
@@ -85,10 +90,10 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
             width: double.infinity,
             height: double.infinity,
             color: Color(0xffFAFAFA),
-            child: _con.isloading
+            child: isloading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      color: MyColors.mainColor,
+                      color: AppColor.mainColor,
                     ),
                   )
                 : SingleChildScrollView(
@@ -110,18 +115,27 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                               ),
                               MyButton(
                                 text: "Edit",
-                                textcolor: MyColors.whiteColor,
-                                textsize: 13,
-                                fontWeight: FontWeight.w500,
+                                textcolor: AppColor.whiteColor,
+                                textsize:
+                                    9, // Use a fixed, readable size instead of scaling it with screen width
+                                fontWeight: FontWeight.w600,
                                 letterspacing: 0.5,
-                                buttoncolor: MyColors.mainColor,
-                                buttonheight: 25,
-                                buttonwidth: width / 5,
-                                radius: 15,
+                                buttoncolor: AppColor.mainColor,
+                                borderColor: AppColor.mainColor,
+                                buttonheight:
+                                    40, // Slightly increased for better tap area
+                                buttonwidth:
+                                    100, // Adjusted for better text fit
+                                radius: 12,
                                 onTap: () async {
-                                  await Navigator.pushNamed(
-                                      context, AppConstants.PURCHASEUPDATEPAGE,
-                                      arguments: purchase);
+                                  // await Navigator.pushNamed(
+                                  //     context, AppConstants.PURCHASEUPDATEPAGE,
+                                  //     arguments: purchase);
+                                  print(
+                                      "Navigating to purchasedetailspage with: ${widget.purchase}");
+
+                                  await AppRouteName.purchaseupdatepage
+                                      .push(context, args: purchase);
                                 },
                               ),
                             ],
@@ -134,14 +148,14 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                             height: 80,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              color: MyColors.containerbg,
+                              color: AppColor.containerbg,
                             ),
                             padding: const EdgeInsets.fromLTRB(20, 0, 50, 0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Text(purchase.productname.toUpperCase(),
+                                Text(purchase.productName.toUpperCase(),
                                     style: Styles.textStyleSmall().copyWith(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15)),
@@ -168,7 +182,7 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                             height: 40,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              color: MyColors.containerbg,
+                              color: AppColor.containerbg,
                             ),
                             padding: const EdgeInsets.fromLTRB(20, 0, 50, 0),
                             child: Row(
@@ -178,7 +192,7 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                                 Text("Purchase Cost : ",
                                     style: Styles.textStyleSmall()
                                         .copyWith(fontWeight: FontWeight.w600)),
-                                Text(purchase.cost,
+                                Text(purchase.purchaseCost.toString(),
                                     style: Styles.textStyleSmall().copyWith(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15)),
@@ -193,7 +207,7 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                             height: 40,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              color: MyColors.containerbg,
+                              color: AppColor.containerbg,
                             ),
                             padding: const EdgeInsets.fromLTRB(20, 0, 50, 0),
                             child: Row(
@@ -218,7 +232,7 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                             height: 40,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              color: MyColors.containerbg,
+                              color: AppColor.containerbg,
                             ),
                             padding: const EdgeInsets.fromLTRB(20, 0, 50, 0),
                             child: Row(
@@ -228,7 +242,7 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                                 Text("MRP : ",
                                     style: Styles.textStyleSmall()
                                         .copyWith(fontWeight: FontWeight.w600)),
-                                Text(purchase.mrp,
+                                Text(purchase.mrp.toString(),
                                     style: Styles.textStyleSmall().copyWith(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15)),
@@ -243,7 +257,7 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                             height: 40,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              color: MyColors.containerbg,
+                              color: AppColor.containerbg,
                             ),
                             padding: const EdgeInsets.fromLTRB(20, 0, 50, 0),
                             child: Row(
@@ -256,7 +270,7 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                                 SizedBox(
                                   width: width / 2,
                                   child: Text(
-                                    purchase.stock,
+                                    purchase.stock.toString(),
                                     style: Styles.textStyleSmall().copyWith(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15),
@@ -276,7 +290,7 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                             height: 40,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              color: MyColors.containerbg,
+                              color: AppColor.containerbg,
                             ),
                             padding: const EdgeInsets.fromLTRB(20, 0, 50, 0),
                             child: Row(
@@ -301,7 +315,7 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                             height: 40,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              color: MyColors.containerbg,
+                              color: AppColor.containerbg,
                             ),
                             padding: const EdgeInsets.fromLTRB(20, 0, 50, 0),
                             child: Row(
@@ -321,19 +335,19 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                           const SizedBox(
                             height: 15,
                           ),
-                          _con.inventoryList.isEmpty
+                          gprovider.inventoryList.isEmpty
                               ? Container()
                               : Text("Related Menus",
                                   style: Styles.textStyleLarge()),
                           const SizedBox(
                             height: 15,
                           ),
-                          _con.inventoryList.isEmpty
+                          gprovider.inventoryList.isEmpty
                               ? Container()
                               : ListView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: _con.inventoryList.length,
+                                  itemCount: gprovider.inventoryList.length,
                                   itemBuilder:
                                       (BuildContext context, int index) {
                                     return Padding(
@@ -345,20 +359,22 @@ class _PurchaseDetailsPageState extends StateMVC<PurchaseDetailsPage> {
                                         background: Container(),
                                         secondaryBackground: Container(
                                             decoration: BoxDecoration(
-                                                color: MyColors.redColor,
+                                                color: AppColor.redColor,
                                                 borderRadius:
                                                     BorderRadius.circular(10)),
                                             child: const Center(
                                               child: Icon(Icons.delete,
-                                                  color: MyColors.bgColor,
+                                                  color: AppColor.bgColor,
                                                   size: 45),
                                             )),
                                         child: MenuWidget(
-                                          image:
-                                              _con.inventoryList[index].image,
-                                          name: _con
-                                              .inventoryList[index].menuname,
-                                          rate: _con.inventoryList[index].rate,
+                                          image: gprovider
+                                              .inventoryList[index].image,
+                                          name: gprovider
+                                              .inventoryList[index].menuName,
+                                          rate: gprovider
+                                              .inventoryList[index].rate
+                                              .toString(),
                                           width: width,
                                           height: height,
                                           onTap: () async {

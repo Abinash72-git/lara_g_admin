@@ -12,8 +12,8 @@ class PurchaseModel {
   final String createdAt;
   final String productCategoryId;
   final String image;
-  final int stockMinValue;  // Added field
-  final bool isStockMin;    // Added field
+  final int stockMinValue;
+  final bool isStockMin;
 
   PurchaseModel({
     required this.purchaseId,
@@ -29,8 +29,8 @@ class PurchaseModel {
     required this.createdAt,
     required this.productCategoryId,
     required this.image,
-    required this.stockMinValue,  // Added parameter
-    required this.isStockMin,     // Added parameter
+    required this.stockMinValue,
+    required this.isStockMin,
   });
 
   factory PurchaseModel.fromJson(Map<String, dynamic> json) {
@@ -40,17 +40,32 @@ class PurchaseModel {
       shopId: json['shop_id'] ?? '',
       productName: json['product_name'] ?? '',
       category: json['category'] ?? '',
-      purchaseCost: (json['purchase_cost'] as num?)?.toDouble() ?? 0.0,
-      mrp: (json['mrp'] as num?)?.toDouble() ?? 0.0,
+      purchaseCost: _parseToDouble(json['purchase_cost']),
+      mrp: _parseToDouble(json['mrp']),
       unit: json['unit'] ?? '',
-      stock: json['stock'] ?? 0,
+      stock: _parseToInt(json['stock']),
       purchaseDate: json['purchase_date'] ?? '',
       createdAt: json['created_at'] ?? '',
       productCategoryId: json['product_category_id'] ?? '',
       image: json['image'] ?? '',
-      stockMinValue: json['stock_min_value'] ?? 0,  // Default to 0 if null
-      isStockMin: json['stock'] <= (json['stock_min_value'] ?? 0), // Check if stock is below or equal to stockMinValue
+      stockMinValue: _parseToInt(json['stock_min_value']),
+      isStockMin:
+          _parseToInt(json['stock']) <= _parseToInt(json['stock_min_value']),
     );
+  }
+
+  static double _parseToDouble(dynamic value) {
+    if (value is String) {
+      return double.tryParse(value) ?? 0.0;
+    }
+    return (value as num?)?.toDouble() ?? 0.0;
+  }
+
+  static int _parseToInt(dynamic value) {
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    return (value as int?) ?? 0;
   }
 
   static List<PurchaseModel> fromList(List<dynamic> list) {

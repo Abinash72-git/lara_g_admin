@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lara_g_admin/enum/enum.dart';
 import 'package:lara_g_admin/models/employee_models.dart';
 import 'package:lara_g_admin/models/getExpense_model.dart';
+import 'package:lara_g_admin/models/inventory_model.dart';
 import 'package:lara_g_admin/models/menu_model.dart';
 import 'package:lara_g_admin/models/menuingredients_model.dart';
 import 'package:lara_g_admin/models/product_model.dart';
@@ -33,6 +34,7 @@ class GetProvider extends ChangeNotifier {
   List<SalesDetails> _saleslist = [];
 
   List<CapitalExpenseModel> _capitalExpense = [];
+  List<InventoryModel> _inventoryList = [];
 
   bool get isLoading => _isLoading;
 
@@ -49,6 +51,12 @@ class GetProvider extends ChangeNotifier {
   List<SalesDetails> get salesList => _saleslist;
 
   List<CapitalExpenseModel> get capitalExpense => _capitalExpense;
+  List<InventoryModel> get inventoryList => _inventoryList;
+
+  void setCapitalExpense(List<CapitalExpenseModel> expenses) {
+    _capitalExpense = expenses;
+    notifyListeners();
+  }
 
   // Setter to safely change loading state and notify listeners
   set isLoading(bool value) {
@@ -160,7 +168,7 @@ class GetProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> getPurchaseList(String shopId,String type) async {
+  Future<void> getPurchaseList(String shopId, String type) async {
     print("----------------------- get purchase List-----------------");
     if (_isLoading) return;
 
@@ -184,7 +192,7 @@ class GetProvider extends ChangeNotifier {
         data: {
           // Changed from params to data for POST request
           'shop_id': shopId,
-         'type': type,
+          'type': type,
         },
         auth: true,
         console: true,
@@ -481,8 +489,7 @@ class GetProvider extends ChangeNotifier {
 
   // Notify that loading has finished and state is updated
 
-  Future<List<CapitalExpenseModel>> getCapitalExpenseList(
-      String token, String shopId) async {
+  Future<List> getCapitalExpenseList(String token, String shopId) async {
     print('----------------- Entering getExpense Api--------------------');
     try {
       final response = await APIService.post(
@@ -493,14 +500,19 @@ class GetProvider extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.fullBody);
+        // final Map<String, dynamic> data = json.decode(response.fullBody);
 
-        if (data.containsKey("result") && data["result"] is List) {
-          List<CapitalExpenseModel> expenses = (data["result"] as List)
-              .map((item) => CapitalExpenseModel.fromMap(item))
+        if (response.fullBody != null && response.fullBody['result'] != null) {
+          final List<dynamic> expenses = response.fullBody['result'];
+          print(
+              '<----------------------api result $expenses ---------------->');
+
+          // Map each result to the MenuIngredientModel
+          _capitalExpense = expenses
+              .map((item) => CapitalExpenseModel.fromJson(item))
               .toList();
 
-          return expenses;
+          return expenses; // Return the list of expenses
         } else {
           throw Exception("Invalid response format");
         }
@@ -510,9 +522,50 @@ class GetProvider extends ChangeNotifier {
       }
     } catch (e) {
       print("Error: $e");
-      return [];
+      return []; // Return an empty list in case of error
     }
   }
+
+  Future<APIResp> deleteExpense({
+  required String token,
+  required String shopId,
+  required String expenseId,
+}) async {
+  try {
+    // Construct the API URL for deleting the expense
+    final resp = await APIService.post(
+      '${UrlPath.loginUrl.deleteExpense}/$token', // Ensure the correct endpoint
+      data: {
+        "shop_id": shopId,  // Passing shopId
+        "expense_id": expenseId,  // Passing expenseId
+      },
+      showNoInternet: false,
+      auth: true,  // Assuming authentication is required
+      forceLogout: false,
+      console: true,
+      timeout: const Duration(seconds: 30),
+    );
+
+    print("Response Status Code: ${resp.statusCode}");
+    print("Raw Response Data: ${resp.data}");
+    print("Full Body: ${resp.fullBody}");  // Debugging the full body of the response
+
+    if (resp.status) {
+      // Assuming the response contains a success message on successful deletion
+      return APIResp(
+        statusCode: resp.statusCode,
+        data: resp.fullBody,  // Using fullBody for the response data
+        status: true,
+      );
+    }
+
+    return resp;
+  } catch (e) {
+    print("Error in deleteExpense: $e");
+    rethrow;
+  }
+}
+
 
   Future<void> getSalesDetails(String shopId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -634,6 +687,99 @@ class GetProvider extends ChangeNotifier {
       );
     } finally {
       isLoading = false;
+    }
+  }
+
+  Future<void> getInventoryMenuDetails(String token, String productId) async {
+    try {
+      print("Request Token: $token");
+      print("Request Data: $productId");
+
+      final response = await APIService.post(
+        '${UrlPath.loginUrl.getInventory}/$token',
+        data: {'product_id': productId},
+        auth: true,
+        console: true,
+        timeout: const Duration(seconds: 30),
+      );
+
+      print("Response Status: ${response.statusCode}");
+      print("Response FullBody: ${response.fullBody}");
+
+      if (response.statusCode == 200) {
+        // Since the response is already a map, no need to decode it again
+        final responseData =
+            response.fullBody; // Assuming it's already a Map<String, dynamic>
+
+        print("Parsed Response Data: $responseData");
+
+        final List<dynamic> result = responseData['result'];
+
+        // If result is not empty, update inventoryList
+        if (result.isNotEmpty) {
+          _inventoryList =
+              result.map((item) => InventoryModel.fromJson(item)).toList();
+        } else {
+          _inventoryList = [];
+        }
+
+        notifyListeners();
+      } else {
+        throw Exception('Failed to load inventory menu details');
+      }
+    } catch (e) {
+      print("Error fetching inventory menu details: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> updatePurchase(
+    String token,
+    String shopId,
+    String purchaseId,
+    String productId,
+    double purchaseCost,
+    double mrp,
+    String unit,
+    int stock,
+    String purchaseDate,
+  ) async {
+    Map<String, dynamic> data = {
+      'shop_id': shopId,
+      'purchase_id': purchaseId,
+      'product_id': productId,
+      'purchase_cost': purchaseCost,
+      'mrp': mrp,
+      'unit': unit,
+      'stock': stock,
+      'purchase_date': purchaseDate,
+    };
+
+    try {
+      final response = await APIService.post(
+        '${UrlPath.loginUrl.updatePurchase}/$token',
+        data: data,
+        auth: true,
+        console: true,
+        timeout: const Duration(seconds: 30),
+      );
+
+      // Check if the response is a success and handle accordingly
+      if (response.statusCode == 200) {
+        // No need to decode the response as it's already a Map
+        var jsonResponse = response.fullBody;
+
+        if (jsonResponse['success'] == true) {
+          print('Purchase updated successfully: ${jsonResponse['message']}');
+        } else {
+          print('Failed to update purchase: ${jsonResponse['message']}');
+        }
+      } else {
+        print(
+            'Error: Unable to update purchase. Status Code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error while making the request: $e');
     }
   }
 }

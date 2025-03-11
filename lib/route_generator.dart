@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lara_g_admin/models/employee_models.dart';
 import 'package:lara_g_admin/models/menu_model.dart';
 import 'package:lara_g_admin/models/menuingredients_model.dart';
+import 'package:lara_g_admin/models/purchaselist_model.dart';
 import 'package:lara_g_admin/models/route_argument.dart';
 import 'package:lara_g_admin/util/extension.dart';
 import 'package:lara_g_admin/views/pages/employee/add_employee_page.dart';
@@ -10,6 +11,7 @@ import 'package:lara_g_admin/views/pages/add_shop_page.dart';
 import 'package:lara_g_admin/views/pages/app_pages.dart';
 import 'package:lara_g_admin/views/pages/capital_expense_add_update_page.dart';
 import 'package:lara_g_admin/views/pages/capital_expense_list_page.dart';
+import 'package:lara_g_admin/views/pages/employee/employee_select_list_page.dart';
 import 'package:lara_g_admin/views/pages/employee/employees_page.dart';
 import 'package:lara_g_admin/views/pages/homepage.dart';
 import 'package:lara_g_admin/views/pages/login_page.dart';
@@ -22,8 +24,11 @@ import 'package:lara_g_admin/views/pages/product/product_add_page.dart';
 import 'package:lara_g_admin/views/pages/product/product_list_page.dart';
 import 'package:lara_g_admin/views/pages/profile_edit.dart';
 import 'package:lara_g_admin/views/pages/purchase/purchase_add_page.dart';
+import 'package:lara_g_admin/views/pages/purchase/purchase_details_page.dart';
+
 import 'package:lara_g_admin/views/pages/purchase/purchase_list_page.dart';
 import 'package:lara_g_admin/views/pages/purchase/purchase_product_select_page.dart';
+import 'package:lara_g_admin/views/pages/purchase/purchase_update_page.dart';
 import 'package:lara_g_admin/views/pages/register_page.dart';
 import 'package:lara_g_admin/views/pages/sales_list_page.dart';
 import 'package:lara_g_admin/views/pages/shop_choose_page.dart';
@@ -50,12 +55,15 @@ enum AppRouteName {
   employeePage('/employees_page'),
   addemployee('/add_employee_page'),
   employeedetails('/employee_details_page'),
+  employeeselectedpage('/employee_select_list_page'),
 
   salesListpage('/sales_list_page'),
 
   purchase_list('/purchase_list_page'),
   purchaseProductSelectPage('/purchase_product_select_page'),
   purchaseaddpage('purchase_add_page'),
+  purchasedetailspage('/purchase_details_page'),
+  purchaseupdatepage('/purchase_update_page'),
   menuList_page('/menu_list_page'),
   menuAdd_page('/menu_add_page.'),
   menuIngredients_page('menu_ingredient_list_page'),
@@ -180,6 +188,9 @@ class RouteGenerator {
         final EmployeeModel employee = data.data["employee"] as EmployeeModel;
         return MaterialPageRoute(
             builder: (_) => EmployeeDetailsPage(employee: employee));
+
+      case AppRouteName.employeeselectedpage:
+        return MaterialPageRoute(builder: (_) => EmployeeSelectListPage());
       case AppRouteName.homepage:
         return MaterialPageRoute(builder: (_) => Homepage());
 
@@ -192,6 +203,19 @@ class RouteGenerator {
         final MenuModel menu = data!.data["menuIngredient"] as MenuModel;
         return MaterialPageRoute(
             builder: (_) => MenuIngredientListPage(menu: menu));
+
+      case AppRouteName.purchaseupdatepage:
+        final PurchaseModel purchase = args as PurchaseModel;
+        print(
+            "Navigating to Purchase Update page with: $purchase"); // Debugging line
+        return MaterialPageRoute(
+          builder: (_) => PurchaseUpdatepage(purchase: purchase),
+        );
+      case AppRouteName.purchasedetailspage:
+        final PurchaseModel purchase = args as PurchaseModel;
+        return MaterialPageRoute(
+          builder: (_) => PurchaseDetailsPage(purchase: purchase),
+        );
 
       case null:
         return MaterialPageRoute(

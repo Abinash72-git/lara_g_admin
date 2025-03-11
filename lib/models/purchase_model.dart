@@ -1,18 +1,18 @@
-class Purchase {
-  String purchaseId;
-  String productId;
-  String shopId;
-  String category;
-  String productName;
-  int quantity;
-  double purchaseCost;
-  double mrp;
-  String unit;
-  String status;
-  String purchaseDate;
-  String createdAt;
+class PurchaseModel {
+  final String purchaseId;
+  final String productId;
+  final String shopId;
+  final String category;
+  final String productName;
+  final int quantity;
+  final double purchaseCost;
+  final double mrp;
+  final String unit;
+  final String status;
+  final String purchaseDate;
+  final String createdAt;
 
-  Purchase({
+  PurchaseModel({
     required this.purchaseId,
     required this.productId,
     required this.shopId,
@@ -28,8 +28,8 @@ class Purchase {
   });
 
   // Convert from JSON
-  factory Purchase.fromJson(Map<String, dynamic> json) {
-    return Purchase(
+  factory PurchaseModel.fromJson(Map<String, dynamic> json) {
+    return PurchaseModel(
       purchaseId: json['purchase_id'],
       productId: json['product_id'],
       shopId: json['shop_id'],
@@ -61,5 +61,11 @@ class Purchase {
       'purchase_date': purchaseDate,
       'created_at': createdAt,
     };
+  }
+
+  // Override toString method for better logging
+  @override
+  String toString() {
+    return 'PurchaseModel(purchaseId: $purchaseId, productId: $productId, shopId: $shopId, category: $category, productName: $productName, quantity: $quantity, purchaseCost: $purchaseCost, mrp: $mrp, unit: $unit, status: $status, purchaseDate: $purchaseDate, createdAt: $createdAt)';
   }
 }

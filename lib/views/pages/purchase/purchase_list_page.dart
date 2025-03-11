@@ -1,6 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:lara_g_admin/helpers/helper.dart';
+import 'package:lara_g_admin/models/product_model.dart';
+import 'package:lara_g_admin/models/purchaselist_model.dart';
+import 'package:lara_g_admin/models/route_argument.dart';
 import 'package:lara_g_admin/provider/get_provider.dart';
 import 'package:lara_g_admin/route_generator.dart';
 import 'package:lara_g_admin/util/app_constants.dart';
@@ -25,7 +28,12 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
   double get radius => sqrt(pow(width, 2) + pow(height, 2));
   late Helper hp;
   bool isloading = false;
+  List<ProductModel> productList = [];
+  List _selectedIndexs = [];
+  List<PurchaseModel> purchaseList = [];
+  int? si;
   GetProvider get gprovider => context.read<GetProvider>();
+
   @override
   void initState() {
     super.initState();
@@ -42,11 +50,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
     String? shopId = prefs.getString(AppConstants.SHOPID);
     String? token = prefs.getString(AppConstants.TOKEN);
 
-    //  await _con.getPurchaseList("");
     await gprovider.getPurchaseList(shopId.toString(), "");
-
-    // await await _con.getProductCategoriesList();
-    await gprovider.getDProductCategories(token.toString());
+    await gprovider.getProductCategories(token.toString());
 
     setState(() {
       isloading = false;
@@ -55,7 +60,6 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
       key: scaffoldKey,
       appBar: AppBar(
@@ -74,22 +78,18 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton(
-          heroTag: null,
-          onPressed: () async {
-            // await Navigator.pushNamed(context, AppConstants.PURCHASEADDPAGE);
-            // await Navigator.pushNamed(
-            //     context, AppConstants.PURCHASEPRODUCTSELECTPAGE);///
-            await AppRouteName.purchaseProductSelectPage.push(
-              context,
-            );
-            getdata();
-          },
-          tooltip: "Add purchase",
-          backgroundColor: AppColor.mainColor,
-          child: const Icon(
-            Icons.add,
-            color: Colors.white,
-          )),
+        heroTag: null,
+        onPressed: () async {
+          await AppRouteName.purchaseProductSelectPage.push(context);
+          getdata();
+        },
+        tooltip: "Add purchase",
+        backgroundColor: AppColor.mainColor,
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
           child: Container(
@@ -111,7 +111,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                             const SizedBox(
                               height: 15,
                             ),
-                            gprovider.productList.isEmpty
+                            gprovider.purchaseList.isEmpty
                                 ? Text(
                                     "No Purchase Added",
                                     style: Styles.textStyleMedium(
@@ -121,7 +121,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                                     shrinkWrap: true,
                                     physics:
                                         const NeverScrollableScrollPhysics(),
-                                    itemCount: gprovider.productList.length,
+                                    itemCount: gprovider.purchaseList.length,
                                     itemBuilder:
                                         (BuildContext context, int index) {
                                       return Dismissible(
@@ -139,10 +139,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                                                   'Do you want delete this purchase'
                                                       .toString()),
                                               titleTextStyle: const TextStyle(
-                                                  // fontFamily: 'Fingbanger',
                                                   color: Colors.black),
                                               contentTextStyle: const TextStyle(
-                                                  // fontFamily: 'Fingbanger',
                                                   color: Colors.black),
                                               actions: <Widget>[
                                                 TextButton(
@@ -152,22 +150,20 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                                                   child: Text(
                                                     'No'.toString(),
                                                     style: const TextStyle(
-                                                        // fontFamily: 'Fingbanger',
                                                         color: Colors.black),
                                                   ),
                                                 ),
                                                 TextButton(
                                                   onPressed: () async {
                                                     deletePurchase(gprovider
-                                                        .productList[index]
-                                                        .productId);
+                                                        .purchaseList[index]
+                                                        .purchaseId);
                                                     Navigator.of(context)
                                                         .pop(true);
                                                   },
                                                   child: Text(
                                                     'Yes'.toString(),
                                                     style: const TextStyle(
-                                                        // fontFamily: 'Fingbanger',
                                                         color: Colors.black),
                                                   ),
                                                 ),
@@ -186,83 +182,90 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                                                   size: 45),
                                             )),
                                         child: ProductWidget(
-                                          image: gprovider
-                                              .productList[index].image,
-                                          name: gprovider
-                                              .productList[index].productName,
-                                          rate: gprovider
-                                              .productList[index].purchaseCost
-                                              .toString(),
-                                          itemCount: gprovider
-                                              .productList[index].stock
-                                              .toString(),
-                                          stockMinValue: "",
-                                          isStockMin: false,
-                                          width: width,
-                                          height: height,
-                                          edit: () async {
-                                            // await Navigator.pushNamed(context,
-                                            //     AppConstants.PURCHASEUPDATEPAGE,
-                                            //     arguments: gprovider
-                                            //         .productList[index]);
-
-                                            getdata();
-                                          },
-                                          delete: () async {
-                                            showDialog(
-                                              context: context,
-                                              builder: (context) => AlertDialog(
-                                                title: Text(
-                                                    'Are you sure?'.toString()),
-                                                content: Text(
-                                                    'Do you want delete this purchase'
-                                                        .toString()),
-                                                titleTextStyle: const TextStyle(
-                                                    // fontFamily: 'Fingbanger',
-                                                    color: Colors.black),
-                                                contentTextStyle: const TextStyle(
-                                                    // fontFamily: 'Fingbanger',
-                                                    color: Colors.black),
-                                                actions: <Widget>[
-                                                  TextButton(
-                                                    onPressed: () =>
-                                                        Navigator.of(context)
-                                                            .pop(false),
-                                                    child: Text(
-                                                      'No'.toString(),
-                                                      style: const TextStyle(
-                                                          // fontFamily: 'Fingbanger',
-                                                          color: Colors.black),
-                                                    ),
-                                                  ),
-                                                  TextButton(
-                                                    onPressed: () async {
-                                                      deletePurchase(gprovider
-                                                          .productList[index]
-                                                          .productId);
-                                                      Navigator.of(context)
-                                                          .pop(true);
-                                                    },
-                                                    child: Text(
-                                                      'Yes'.toString(),
-                                                      style: const TextStyle(
-                                                          // fontFamily: 'Fingbanger',
-                                                          color: Colors.black),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                          onTap: () async {
-                                            await Navigator.pushNamed(
+                                            image: gprovider
+                                                .purchaseList[index].image,
+                                            name: gprovider.purchaseList[index]
+                                                .productName,
+                                            rate: gprovider.purchaseList[index]
+                                                .purchaseCost
+                                                .toString(),
+                                            itemCount: gprovider
+                                                .purchaseList[index].stock
+                                                .toString(),
+                                            stockMinValue: "",
+                                            isStockMin: false,
+                                            width: width,
+                                            height: height,
+                                            edit: () async {
+                                              print(
+                                                  "Navigating to purchaseupdatepage with: ${gprovider.purchaseList[index]}");
+                                              await AppRouteName
+                                                  .purchaseupdatepage
+                                                  .push(
                                                 context,
-                                                AppConstants
-                                                    .PURCHASEDETAILSPAGE,
-                                                arguments: gprovider
-                                                    .productList[index]);
-                                          },
-                                        ),
+                                                args: gprovider
+                                                    .purchaseList[index],
+                                              );
+                                              getdata();
+                                            },
+                                            delete: () async {
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) =>
+                                                    AlertDialog(
+                                                  title: Text('Are you sure?'
+                                                      .toString()),
+                                                  content: Text(
+                                                      'Do you want delete this purchase'
+                                                          .toString()),
+                                                  titleTextStyle:
+                                                      const TextStyle(
+                                                          color: Colors.black),
+                                                  contentTextStyle:
+                                                      const TextStyle(
+                                                          color: Colors.black),
+                                                  actions: <Widget>[
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.of(context)
+                                                              .pop(false),
+                                                      child: Text(
+                                                        'No'.toString(),
+                                                        style: const TextStyle(
+                                                            color:
+                                                                Colors.black),
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () async {
+                                                        deletePurchase(gprovider
+                                                            .purchaseList[index]
+                                                            .purchaseId);
+                                                        Navigator.of(context)
+                                                            .pop(true);
+                                                      },
+                                                      child: Text(
+                                                        'Yes'.toString(),
+                                                        style: const TextStyle(
+                                                            color:
+                                                                Colors.black),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                            onTap: () async {
+                                              print(
+                                                  "Navigating to purchasedetailspage with: ${gprovider.purchaseList[index]}");
+                                              await AppRouteName
+                                                  .purchasedetailspage
+                                                  .push(
+                                                context,
+                                                args: gprovider.purchaseList[
+                                                    index], // Passing selected purchase item
+                                              );
+                                            }),
                                       );
                                     }),
                             const SizedBox(
@@ -274,15 +277,15 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                     ))),
     );
   }
+}
 
-  deletePurchase(String purchaseID) async {
-    final sharedPrefs = await SharedPreferences.getInstance();
-    var data = {
-      "shop_id": sharedPrefs.getString(AppConstants.SHOPID).toString(),
-      "purchase_id": purchaseID,
-    };
+deletePurchase(String purchaseID) async {
+  final sharedPrefs = await SharedPreferences.getInstance();
+  var data = {
+    "shop_id": sharedPrefs.getString(AppConstants.SHOPID).toString(),
+    "purchase_id": purchaseID,
+  };
 
-    /// await _con.deletePurchase(data);////
-    // await _con.getEmployeeList();
-  }
+  // await _con.deletePurchase(data);
+  // await _con.getEmployeeList();
 }
