@@ -31,7 +31,7 @@ class GetProvider extends ChangeNotifier {
   List<MenuModel> _menuList = [];
   List<MenuIngredientModel> _menuIngredients = [];
 
-  List<SalesDetails> _saleslist = [];
+  List<SaleModel> _saleslist = [];
 
   List<CapitalExpenseModel> _capitalExpense = [];
   List<InventoryModel> _inventoryList = [];
@@ -48,7 +48,7 @@ class GetProvider extends ChangeNotifier {
   List<MenuModel> get menuList => _menuList;
   List<MenuIngredientModel> get menuIngredients => _menuIngredients;
 
-  List<SalesDetails> get salesList => _saleslist;
+  List<SaleModel> get salesList => _saleslist;
 
   List<CapitalExpenseModel> get capitalExpense => _capitalExpense;
   List<InventoryModel> get inventoryList => _inventoryList;
@@ -527,49 +527,52 @@ class GetProvider extends ChangeNotifier {
   }
 
   Future<APIResp> deleteExpense({
-  required String token,
-  required String shopId,
-  required String expenseId,
-}) async {
-  try {
-    // Construct the API URL for deleting the expense
-    final resp = await APIService.post(
-      '${UrlPath.loginUrl.deleteExpense}/$token', // Ensure the correct endpoint
-      data: {
-        "shop_id": shopId,  // Passing shopId
-        "expense_id": expenseId,  // Passing expenseId
-      },
-      showNoInternet: false,
-      auth: true,  // Assuming authentication is required
-      forceLogout: false,
-      console: true,
-      timeout: const Duration(seconds: 30),
-    );
-
-    print("Response Status Code: ${resp.statusCode}");
-    print("Raw Response Data: ${resp.data}");
-    print("Full Body: ${resp.fullBody}");  // Debugging the full body of the response
-
-    if (resp.status) {
-      // Assuming the response contains a success message on successful deletion
-      return APIResp(
-        statusCode: resp.statusCode,
-        data: resp.fullBody,  // Using fullBody for the response data
-        status: true,
+    required String token,
+    required String shopId,
+    required String expenseId,
+  }) async {
+    try {
+      // Construct the API URL for deleting the expense
+      final resp = await APIService.post(
+        '${UrlPath.loginUrl.deleteExpense}/$token', // Ensure the correct endpoint
+        data: {
+          "shop_id": shopId, // Passing shopId
+          "expense_id": expenseId, // Passing expenseId
+        },
+        showNoInternet: false,
+        auth: true, // Assuming authentication is required
+        forceLogout: false,
+        console: true,
+        timeout: const Duration(seconds: 30),
       );
+
+      print("Response Status Code: ${resp.statusCode}");
+      print("Raw Response Data: ${resp.data}");
+      print(
+          "Full Body: ${resp.fullBody}"); // Debugging the full body of the response
+
+      if (resp.status) {
+        // Assuming the response contains a success message on successful deletion
+        return APIResp(
+          statusCode: resp.statusCode,
+          data: resp.fullBody, // Using fullBody for the response data
+          status: true,
+        );
+      }
+
+      return resp;
+    } catch (e) {
+      print("Error in deleteExpense: $e");
+      rethrow;
     }
-
-    return resp;
-  } catch (e) {
-    print("Error in deleteExpense: $e");
-    rethrow;
   }
-}
-
 
   Future<void> getSalesDetails(String shopId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString(AppConstants.TOKEN);
+
+    print("----------------- $token----------");
+    print("----------------- $shopId-------------");
 
     if (token == null) {
       throw APIException(
@@ -592,15 +595,24 @@ class GetProvider extends ChangeNotifier {
       print("Response fullBody: ${response.fullBody}");
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.fullBody);
-
-        // Check if 'result' is present in the response
-        if (data['result'] != null) {
-          final List<dynamic> salesListData = data['result'];
+        if (response.fullBody != null && response.fullBody['result'] != null) {
+          final List<dynamic> salesListData = response.fullBody['result'];
 
           // Convert response data to a list of SalesDetails models
-          _saleslist =
-              salesListData.map((item) => SalesDetails.fromJson(item)).toList();
+          _saleslist = salesListData.map((item) {
+            // Parse string fields as double
+            return SaleModel.fromMap({
+              'sales_id': item['sales_id'],
+              'sale_preparation_cost':
+                  double.tryParse(item['sale_preparation_cost'].toString()) ??
+                      0.0,
+              'sale_price':
+                  double.tryParse(item['sale_price'].toString()) ?? 0.0,
+              'sale_date': item['sale_date'] ?? '',
+              'created_at': item['created_at'] ?? '',
+              'sale_menu_details': item['sale_menu_details'] ?? [],
+            });
+          }).toList();
 
           print("Parsed sales list length: ${_saleslist.length}");
         } else {

@@ -1,27 +1,20 @@
-class Salemenumodel {
+class MenuDetails {
   final String menuName;
-  final String rate;
+  final double rate;
   final String image;
 
-  Salemenumodel({
+  MenuDetails({
     required this.menuName,
     required this.rate,
     required this.image,
   });
 
-  factory Salemenumodel.fromJson(Map<String, dynamic> json) {
-    return Salemenumodel(
-      menuName: json["menu_name"] ?? "",
-      rate: json["rate"] ?? "0.0",
-      image: json["image"] ?? "",
+  // Method to create MenuDetails from a map (usually from API response)
+  factory MenuDetails.fromMap(Map<String, dynamic> json) {
+    return MenuDetails(
+      menuName: json['menu_name'] ?? '',
+      rate: double.tryParse(json['rate'].toString()) ?? 0.0,
+      image: json['image'] ?? '',
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      "menu_name": menuName,
-      "rate": rate,
-      "image": image,
-    };
   }
 }

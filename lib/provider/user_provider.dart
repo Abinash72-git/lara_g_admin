@@ -1006,7 +1006,7 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
- Future<APIResp> updateExpense({
+  Future<APIResp> updateExpense({
     required String token,
     required String shopId,
     required String expenseId,
@@ -1023,7 +1023,8 @@ class UserProvider extends ChangeNotifier {
         '${UrlPath.loginUrl.updateExpense}/$token', // Ensure the correct endpoint
         data: {
           "shop_id": shopId,
-          "expense_id": expenseId, // The unique expense ID for updating the record
+          "expense_id":
+              expenseId, // The unique expense ID for updating the record
           "expense_name": expenseName,
           "expense_description": expenseDescription,
           "expense_amount": expenseAmount,
@@ -1058,7 +1059,6 @@ class UserProvider extends ChangeNotifier {
       rethrow;
     }
   }
-
 
   Future<APIResp> addPurchase({
     required String shopId,
@@ -1148,4 +1148,128 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<APIResp> addSale({
+    required String token,
+    required String shopId,
+    required String preparationCost,
+    required String salePrice,
+    required String saleDate,
+    required String menuIds,
+    required String menuNames,
+    required String quantities,
+    required String preparationCosts,
+  }) async {
+    try {
+      // Construct the API URL for adding the sale
+      final resp = await APIService.post(
+        '${UrlPath.loginUrl.addSales}/$token', // Ensure the correct endpoint
+        data: {
+          "shop_id": shopId,
+          "preparation_cost": preparationCost,
+          "sale_price": salePrice,
+          "sale_date": saleDate,
+          "menu_ids": menuIds,
+          "menu_names": menuNames,
+          "quantities": quantities,
+          "preparation_costs": preparationCosts,
+        },
+        showNoInternet: true,
+        auth: true, // Assuming authentication is required
+        forceLogout: false,
+        console: true,
+        timeout: const Duration(seconds: 30),
+      );
+
+      print("Response Status Code: ${resp.statusCode}");
+      print("Raw Response Data: ${resp.data}");
+      print(
+          "Full Body: ${resp.fullBody}"); // Debugging the full body of the response
+
+      if (resp.status) {
+        // Assuming the response contains a success message on successful sale addition
+        return APIResp(
+          statusCode: resp.statusCode,
+          data: resp.fullBody, // Using fullBody for the response data
+          status: true,
+        );
+      }
+
+      return resp;
+    } catch (e) {
+      print("Error in addSale: $e");
+      rethrow;
+    }
+  }
+
+ Future<APIResp> deleteSale({
+  required String token,
+  required String shopId,
+  required String salesId,
+}) async {
+  try {
+    print("----------------- Delete Sale API Call -----------------");
+
+    // Prepare the data to be sent in the request
+    final Map<String, dynamic> data = {
+      "shop_id": shopId,
+      "sales_id": salesId,
+    };
+
+    print("Request Data: $data");
+
+    // Make the POST request to the backend API
+    final response = await APIService.post(
+      '${UrlPath.loginUrl.deleteSales}/$token',
+      data: data,
+      showNoInternet: true,
+      auth: true,
+      forceLogout: false,
+      console: true,
+    );
+
+    // Debugging the response
+    print("Response Status Code: ${response.statusCode}");
+    print("Raw Response Data: ${response.data}");
+    print("Full Body: ${response.fullBody}");
+
+    if (response.statusCode == 200) {
+      // Check if fullBody is already a Map or a String
+      Map<String, dynamic> responseData;
+      
+      if (response.fullBody is Map<String, dynamic>) {
+        // If it's already a Map, use it directly
+        responseData = response.fullBody;
+      } else if (response.fullBody is String) {
+        // If it's a String, decode it
+        try {
+          responseData = json.decode(response.fullBody);
+        } catch (e) {
+          // If it can't be decoded as JSON, create a simple Map
+          responseData = {'message': response.fullBody};
+        }
+      } else {
+        // Fallback for any other type
+        responseData = {'message': 'Success'};
+      }
+      
+      print("API Response: $responseData");
+
+      return APIResp(
+        statusCode: response.statusCode,
+        data: responseData['message'], // This will be a String
+        status: true,
+      );
+    } else {
+      throw Exception('Failed to delete sale');
+    }
+  } catch (e) {
+    print("Error: $e");
+    return APIResp(
+      status: false,
+      data: e.toString(),
+      statusCode: 500,
+    );
+  }
+}
 }

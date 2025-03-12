@@ -1,5 +1,5 @@
 class UrlPath {
-  static const LoginUrl loginUrl = LoginUrl();
+  static LoginUrl loginUrl = LoginUrl();
 }
 
 class LoginUrl {
@@ -38,6 +38,8 @@ class LoginUrl {
   final String getExpense = 'get_expense';
 
   final String salemenuDetails = 'get_sales_details';
+  final String addSales = 'add_sale';
+  final String deleteSales = 'delete_sales';
 
   final String getInventory = 'get_inventory_menu_details';
 }

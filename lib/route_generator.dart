@@ -4,6 +4,8 @@ import 'package:lara_g_admin/models/menu_model.dart';
 import 'package:lara_g_admin/models/menuingredients_model.dart';
 import 'package:lara_g_admin/models/purchaselist_model.dart';
 import 'package:lara_g_admin/models/route_argument.dart';
+import 'package:lara_g_admin/models/salemenudetails.dart';
+import 'package:lara_g_admin/models/salemenumodel.dart';
 import 'package:lara_g_admin/util/extension.dart';
 import 'package:lara_g_admin/views/pages/employee/add_employee_page.dart';
 import 'package:lara_g_admin/views/pages/employee/employee_details_page.dart';
@@ -30,6 +32,8 @@ import 'package:lara_g_admin/views/pages/purchase/purchase_list_page.dart';
 import 'package:lara_g_admin/views/pages/purchase/purchase_product_select_page.dart';
 import 'package:lara_g_admin/views/pages/purchase/purchase_update_page.dart';
 import 'package:lara_g_admin/views/pages/register_page.dart';
+import 'package:lara_g_admin/views/pages/sale_add_page.dart';
+import 'package:lara_g_admin/views/pages/sale_menu_list_page.dart';
 import 'package:lara_g_admin/views/pages/sales_list_page.dart';
 import 'package:lara_g_admin/views/pages/shop_choose_page.dart';
 import 'package:lara_g_admin/views/pages/shop_list_page.dart';
@@ -58,6 +62,8 @@ enum AppRouteName {
   employeeselectedpage('/employee_select_list_page'),
 
   salesListpage('/sales_list_page'),
+  salesMenuListpage('/sale_menu_list_page'),
+  salesAddpage('/sale_add_page'),
 
   purchase_list('/purchase_list_page'),
   purchaseProductSelectPage('/purchase_product_select_page'),
@@ -112,30 +118,21 @@ class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     final args = settings.arguments;
     final name = AppRouteName.values
-        .where(
-          (element) => element.value == settings.name,
-        )
+        .where((element) => element.value == settings.name)
         .firstOrNull;
-    // settings.name
+
     switch (name) {
       case AppRouteName.splashPage:
-        return MaterialPageRoute(
-          builder: (_) => Splash(),
-        );
+        return MaterialPageRoute(builder: (_) => Splash());
       case AppRouteName.loginpage:
         return MaterialPageRoute(builder: (_) => LoginPage());
       case AppRouteName.addShoppage:
         final bool isFirstTime = (args as bool?) ?? false;
         return MaterialPageRoute(
-          builder: (context) => AddShoppage(isFirstTime: isFirstTime),
-          settings: settings, // Add this line
-        );
+            builder: (_) => AddShoppage(isFirstTime: isFirstTime));
 
       case AppRouteName.appPage:
-        return MaterialPageRoute(
-            builder: (_) => AppPages(
-                  tabNumber: 0,
-                ));
+        return MaterialPageRoute(builder: (_) => AppPages(tabNumber: 0));
       case AppRouteName.verifyOtp:
         return MaterialPageRoute(builder: (_) => OTPpage());
       case AppRouteName.registerpage:
@@ -148,11 +145,13 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => ShopListPage());
       case AppRouteName.profile_editpage:
         return MaterialPageRoute(builder: (_) => ProfileEdit());
+
       case AppRouteName.employeePage:
         return MaterialPageRoute(builder: (_) => EmployeesPage());
       case AppRouteName.addemployee:
         final RouteArgument data = args as RouteArgument;
         return MaterialPageRoute(builder: (_) => AddEmployeepage(data: data));
+
       case AppRouteName.purchase_list:
         return MaterialPageRoute(builder: (_) => PurchaseListPage());
       case AppRouteName.purchaseProductSelectPage:
@@ -165,15 +164,10 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => ProductListPage());
       case AppRouteName.product_add:
         final RouteArgument data = args as RouteArgument;
-        print("✅ Received RouteArgument: ${data.data}");
         return MaterialPageRoute(builder: (_) => ProductAddpage(data: data));
-      // case AppRouteName.demoproduct_add:
-      //   final RouteArgument data = args as RouteArgument;
-      //   print("✅ Received RouteArgument: ${data.data}");
-      //   return MaterialPageRoute(builder: (_) => Demoaddproduct(data: data));
+
       case AppRouteName.purchaseaddpage:
         final RouteArgument data = args as RouteArgument;
-        print("✅ Received RouteArgument: ${data.data}");
         return MaterialPageRoute(builder: (_) => PurchaseAddpage(data: data));
 
       case AppRouteName.capitalExpense_page:
@@ -182,61 +176,61 @@ class RouteGenerator {
         final RouteArgument data = args as RouteArgument;
         return MaterialPageRoute(
             builder: (_) => CaptalExpenseAddUpdatepage(data: data));
+
       case AppRouteName.employeedetails:
         final RouteArgument data = args as RouteArgument;
-        // Extract EmployeeModel from data
         final EmployeeModel employee = data.data["employee"] as EmployeeModel;
         return MaterialPageRoute(
             builder: (_) => EmployeeDetailsPage(employee: employee));
 
-      case AppRouteName.employeeselectedpage:
-        return MaterialPageRoute(builder: (_) => EmployeeSelectListPage());
-      case AppRouteName.homepage:
-        return MaterialPageRoute(builder: (_) => Homepage());
-
       case AppRouteName.salesListpage:
         return MaterialPageRoute(builder: (_) => SalesListPage());
 
+      case AppRouteName.salesMenuListpage:
+        if (args is Map) {
+          final saleMenu = args['saleMenu'] as List<SaleMenuDetails>;
+          final menuDetails = args['menuDetails'] as List<MenuDetails>;
+          return MaterialPageRoute(
+            builder: (_) => SaleMenuListPage(
+              saleMenu: saleMenu,
+              menuDetails: menuDetails,
+            ),
+          );
+        }
+        return _errorRoute();
+      case AppRouteName.salesAddpage:
+        return MaterialPageRoute(builder: (_) => SaleAddpage());
+
       case AppRouteName.menuIngredients_page:
         final RouteArgument? data = args as RouteArgument?;
-
         final MenuModel menu = data!.data["menuIngredient"] as MenuModel;
         return MaterialPageRoute(
             builder: (_) => MenuIngredientListPage(menu: menu));
 
       case AppRouteName.purchaseupdatepage:
         final PurchaseModel purchase = args as PurchaseModel;
-        print(
-            "Navigating to Purchase Update page with: $purchase"); // Debugging line
         return MaterialPageRoute(
-          builder: (_) => PurchaseUpdatepage(purchase: purchase),
-        );
+            builder: (_) => PurchaseUpdatepage(purchase: purchase));
+
       case AppRouteName.purchasedetailspage:
         final PurchaseModel purchase = args as PurchaseModel;
         return MaterialPageRoute(
-          builder: (_) => PurchaseDetailsPage(purchase: purchase),
-        );
+            builder: (_) => PurchaseDetailsPage(purchase: purchase));
 
       case null:
         return MaterialPageRoute(
-          builder: (context) {
-            return Scaffold(
-              body: Center(
-                child: Text(
-                  "Route Error",
-                  style: context.textTheme.labelLarge?.copyWith(
-                    color: context.colorScheme.error,
-                  ),
-                ),
-              ),
-            );
-          },
-        );
+            builder: (_) => Scaffold(body: Center(child: Text("Route Error"))));
+
       default:
         return MaterialPageRoute(
-            builder: (_) =>
-                const SafeArea(child: Scaffold(body: Text("Route Error"))));
+            builder: (_) => Scaffold(body: Center(child: Text("Route Error"))));
     }
+  }
+
+  static Route<dynamic> _errorRoute() {
+    return MaterialPageRoute(
+      builder: (_) => Scaffold(body: Center(child: Text("Page not found"))),
+    );
   }
 }
 

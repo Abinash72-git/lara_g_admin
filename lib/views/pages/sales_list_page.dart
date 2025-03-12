@@ -1,9 +1,12 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:lara_g_admin/helpers/dialogs.dart';
 import 'package:lara_g_admin/helpers/helper.dart';
-import 'package:lara_g_admin/models/saledetails_model.dart';
+
 import 'package:lara_g_admin/provider/get_provider.dart';
+import 'package:lara_g_admin/provider/user_provider.dart';
+import 'package:lara_g_admin/route_generator.dart';
 import 'package:lara_g_admin/util/app_constants.dart';
 import 'package:lara_g_admin/util/colors_const.dart';
 import 'package:lara_g_admin/util/styles.dart';
@@ -28,6 +31,7 @@ class _SalesListPageState extends State<SalesListPage> {
   bool isloading = false;
 
   GetProvider get gprovider => context.read<GetProvider>();
+  UserProvider get provider => context.read<UserProvider>();
 
   @override
   void initState() {
@@ -72,7 +76,8 @@ class _SalesListPageState extends State<SalesListPage> {
       floatingActionButton: FloatingActionButton(
           heroTag: null,
           onPressed: () async {
-            await Navigator.pushNamed(context, AppConstants.SALEADDPAGE);
+            // await Navigator.pushNamed(context, AppConstants.SALEADDPAGE);
+            await AppRouteName.salesAddpage.push(context);
             getdata();
           },
           tooltip: "Add Sale",
@@ -121,13 +126,15 @@ class _SalesListPageState extends State<SalesListPage> {
                                         padding:
                                             const EdgeInsets.only(bottom: 10),
                                         child: Dismissible(
-                                          key: Key(index.toString()),
+                                          key: Key(gprovider.salesList[index]
+                                              .salesId), // Use a unique identifier
                                           direction:
                                               DismissDirection.endToStart,
                                           background: Container(),
-                                          confirmDismiss:
-                                              (DismissDirection direction) {
-                                            return showDialog(
+                                          confirmDismiss: (DismissDirection
+                                              direction) async {
+                                            final bool? result =
+                                                await showDialog(
                                               context: context,
                                               builder: (context) => AlertDialog(
                                                 title: Text(
@@ -136,11 +143,10 @@ class _SalesListPageState extends State<SalesListPage> {
                                                     'Do you want delete this sale'
                                                         .toString()),
                                                 titleTextStyle: const TextStyle(
-                                                    // fontFamily: 'Fingbanger',
                                                     color: Colors.black),
-                                                contentTextStyle: const TextStyle(
-                                                    // fontFamily: 'Fingbanger',
-                                                    color: Colors.black),
+                                                contentTextStyle:
+                                                    const TextStyle(
+                                                        color: Colors.black),
                                                 actions: <Widget>[
                                                   TextButton(
                                                     onPressed: () =>
@@ -149,28 +155,72 @@ class _SalesListPageState extends State<SalesListPage> {
                                                     child: Text(
                                                       'No'.toString(),
                                                       style: const TextStyle(
-                                                          // fontFamily: 'Fingbanger',
                                                           color: Colors.black),
                                                     ),
                                                   ),
                                                   TextButton(
                                                     onPressed: () async {
-                                                      deleteSale(gprovider
-                                                          .salesList[index]
-                                                          .salesId);
+                                                      // Close the dialog
                                                       Navigator.of(context)
                                                           .pop(true);
+                                                      // The actual deletion happens in onDismissed
                                                     },
                                                     child: Text(
                                                       'Yes'.toString(),
                                                       style: const TextStyle(
-                                                          // fontFamily: 'Fingbanger',
                                                           color: Colors.black),
                                                     ),
                                                   ),
                                                 ],
                                               ),
                                             );
+
+                                            return result;
+                                          },
+                                          onDismissed: (direction) {
+                                            // This runs after the user has confirmed and the item has been dismissed
+                                            final salesId = gprovider
+                                                .salesList[index].salesId;
+
+                                            // Remove from the UI immediately
+                                            final removedItem =
+                                                gprovider.salesList[index];
+                                            setState(() {
+                                              gprovider.salesList
+                                                  .removeAt(index);
+                                            });
+
+                                            // Then make the API call
+                                            deleteSale(salesId).then((success) {
+                                              // If deletion fails, put the item back
+                                              if (!success) {
+                                                setState(() {
+                                                  gprovider.salesList.insert(
+                                                      index, removedItem);
+                                                });
+
+                                                // Show error message
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                        'Failed to delete sale. Please try again.'),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              } else {
+                                                // Show success message
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                        'Sale deleted successfully'),
+                                                    backgroundColor:
+                                                        Colors.green,
+                                                  ),
+                                                );
+                                              }
+                                            });
                                           },
                                           secondaryBackground: Container(
                                               decoration: BoxDecoration(
@@ -201,11 +251,20 @@ class _SalesListPageState extends State<SalesListPage> {
                                             width: width,
                                             height: height,
                                             onTap: () async {
-                                              await Navigator.pushNamed(context,
-                                                  AppConstants.SALEMENULISTPAGE,
-                                                  arguments: gprovider
+                                              await AppRouteName
+                                                  .salesMenuListpage
+                                                  .push(
+                                                context,
+                                                args: {
+                                                  'saleMenu': gprovider
                                                       .salesList[index]
-                                                      .saleMenuDetails);
+                                                      .saleMenu,
+                                                  'menuDetails': gprovider
+                                                      .salesList[index].saleMenu
+                                                      .map((e) => e.menuDetails)
+                                                      .toList(),
+                                                },
+                                              );
                                             },
                                           ),
                                         ),
@@ -221,14 +280,23 @@ class _SalesListPageState extends State<SalesListPage> {
     );
   }
 
-  deleteSale(String salesID) async {
+  Future<bool> deleteSale(String salesID) async {
+    print('----------- delete--------');
     final sharedPrefs = await SharedPreferences.getInstance();
-    var data = {
-      "shop_id": sharedPrefs.getString(AppConstants.SHOPID).toString(),
-      "sales_id": salesID,
-    };
+    String? token = sharedPrefs.getString(AppConstants.TOKEN);
+    String? shopId = sharedPrefs.getString(AppConstants.SHOPID);
 
-    //await _con.deleteSale(data);
-    // await _con.getEmployeeList();
+    if (token != null && shopId != null) {
+      var response = await provider.deleteSale(
+        token: token,
+        shopId: shopId,
+        salesId: salesID,
+      );
+
+      return response.status;
+    } else {
+      print('Token or Shop ID is missing');
+      return false;
+    }
   }
 }
